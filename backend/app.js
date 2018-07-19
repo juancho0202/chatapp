@@ -13,6 +13,9 @@ io = socket(server);
 io.on('connection', (socket) => {
     console.log(socket.id);
 
+    /**
+     * Propagates every new message to all the connected sockets
+     */
     socket.on('SEND_MESSAGE', function(data){
         io.emit('RECEIVE_MESSAGE', data);
     })

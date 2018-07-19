@@ -1,11 +1,15 @@
 import React from "react";
 import io from "socket.io-client";
+import MessageForm from "./MessageForm";
+import Settings from "./Settings";
+import MessagesContainer from "./MessagesContainer";
+import ResetDefault from "./ResetDefault";
 
 class Chat extends React.Component{
     constructor(props){
         super(props);
 
-        this.socket = io('localhost:5000');
+        this.socket = io('192.168.2.101:5000');
 
         this.state = {
             socketId: null,
@@ -23,10 +27,17 @@ class Chat extends React.Component{
             }
         };
 
+        /**
+         * The socketId is saved inside of the state once we are connected to the application
+         */
         this.socket.on('connect', ()=>{
             this.setState({socketId: this.socket.id});
         });
-
+        
+        /**
+         * Listener function to trigger messages' changes in the state
+         * @param {object} data The new messages array from the application
+         */
         this.socket.on('RECEIVE_MESSAGE', (data)=> {
             addMessage(data);
             if(this.state.currentTab!=='chat'){
@@ -35,11 +46,19 @@ class Chat extends React.Component{
                 })
             }
         });
-
+        
+        /**
+         * Appends new message to the messages array
+         * @param {object} data The new message to append to the messages array
+         */
         const addMessage = data => {
             this.setState({messages: [...this.state.messages, data]});            
         };
 
+        /**
+         * Handler function to send messsages in the application using socket.io 
+         * @param {object} data The new message to append to the messages array
+         */
         this.sendMessage = ev => {
             ev.preventDefault();
             this.socket.emit('SEND_MESSAGE', {
@@ -56,6 +75,9 @@ class Chat extends React.Component{
         
     }
 
+    /**
+     * Simulates a blinking animation on the Navbar specifically in the element 'Chat' to gain user's attention
+     */
     blink = () => { 
         let title = this.state.titleVisibility;
         if(title==='hidden'){
@@ -65,15 +87,42 @@ class Chat extends React.Component{
         }
     }
 
+    /**
+     * Opens the chat when the user clicks on the element 'Chat' in the Navbar;
+     */
     openChat = ()=>{
         clearInterval(this.state.timeoutId);
         this.setState({currentTab: 'chat',timeoutId: null, titleVisibility: 'Chat'});
     }
 
+    /**
+     * Opens the settings when the user clicks on the element 'Settings' in the Navbar;
+     */
     openSettings = ()=>{
         this.setState({currentTab: 'settings'});
     }
 
+    /**
+     * Resets all the settings to their default values in the state
+     */
+    resetDefault = ()=>{
+        this.setState({
+            username: 'guest0001',            
+            settings: {
+                color: 'light',
+                clock24: true,
+                ctrlenter: false,
+                onenter: true,
+            }
+        });
+    }
+
+    /**
+     * Helper function to get a customized string from the time passed as an attribute
+     * @param {boolean} format24 Desired format for the time 24H / 12H
+     * @param {Date} date The Date object
+     * @returns {string} 
+     */
     getFormattedTime = (format24, date) =>{
         if (format24){
             const hours = date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
@@ -88,17 +137,22 @@ class Chat extends React.Component{
         }
     }
 
-    
-    handleColorChange = (changeEvent)=> {
+    /**
+     * Handler function to trigger color-selection changes in the state
+     */
+    handleColorChange = (e)=> {
         let settings  = this.state.settings;
-        settings.color = changeEvent.target.value;
+        settings.color = e.target.value;
         this.setState({
             settings
         });
     }
 
-    handleClockChange = (changeEvent)=> {
-        const result=  changeEvent.target.value=== '24';
+    /**
+     * Handler function to trigger time-format changes in the state
+     */
+    handleClockChange = (e)=> {
+        const result=  e.target.value=== '24';
         
         let settings  = this.state.settings;
         settings.clock24 = result;
@@ -107,8 +161,11 @@ class Chat extends React.Component{
         });
     }
 
-    handleOnEnterChange = (changeEvent)=> {
-        const result=  changeEvent.target.value=== 'on';
+    /**
+     * Handler function to trigger send-on-enter-preference changes in the state
+     */
+    handleOnEnterChange = (e)=> {
+        const result=  e.target.value=== 'on';
         
         let settings  = this.state.settings;
         settings.onenter = result;
@@ -117,91 +174,86 @@ class Chat extends React.Component{
         });
     }
 
-    handleKeyPress = (event) => {
-        if(event.key == 'Enter' && !this.state.settings.onenter){
-          event.preventDefault();
+    /**
+     * Handler function to enforce the send-on-enter preference 
+     */
+    handleMessageKeyPress = (e) => {
+        if(e.key == 'Enter' && !this.state.settings.onenter){
+          e.preventDefault();
         }
     }
 
+    /**
+     * Handler function to trigger message changes in the state
+     */
+    handleMessageChange = (e) => {
+        this.setState({message: e.target.value})
+    }
+
+    /**
+     * Handler function to trigger username changes in the state
+     */
+    handleUsernameChange = (e) => {
+        this.setState({username: e.target.value})
+    }
+
     render(){
-
-        const messagesContainer = <div className="col-12 d-flex align-items-end">
-                                    <div className="messages">
-                                        {this.state.messages.map(message => {
-                                            return (
-                                                <div className={message.socketId===this.state.socketId?'ownMessage':'otherGuysMessage'}>{message.socketId!==this.state.socketId?message.author+':' :''} {message.message} - {this.state.settings.clock24?message.date24:message.date12}</div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>;
-
-        const settingsContainer = <div className="col-12">
-                                    <div className="form-group">
-                                        <label htmlFor="username">Username</label>
-                                        <input type="text" className="form-control" id="username" value={this.state.username} onChange={ev => this.setState({username: ev.target.value})}/>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Interface Color</label>
-                                    </div>
-                                    <div className="form-group row col-4" style={{marginLeft:'5px'}}>
-                                        <div className="col form-check form-check-inline">
-                                            <input className="form-check-input" type="radio" id="radioLight" value="light" checked={this.state.settings.color=== 'light'}  onChange={this.handleColorChange} />
-                                            <label className="form-check-label" htmlFor="radioLight">Light</label>
-                                        </div>
-                                        <div className="col form-check form-check-inline">
-                                            <input className="form-check-input" type="radio" id="radioDark" value="dark" checked={this.state.settings.color=== 'dark'}  onChange={this.handleColorChange} />
-                                            <label className="form-check-label" htmlFor="radioDark">Dark</label>
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Clock Display</label>
-                                    </div>
-                                    <div className="form-group row col-4" style={{marginLeft:'5px'}}>
-                                        <div className="col form-check form-check-inline">
-                                            <input className="form-check-input" type="radio" id="radio12H" value="12" checked={this.state.settings.clock24 === false}  onChange={this.handleClockChange} />
-                                            <label className="form-check-label" htmlFor="radio12H">12 Hours</label>
-                                        </div>
-                                        <div className="col form-check form-check-inline">
-                                            <input className="form-check-input" type="radio" id="radio24H" value="24" checked={this.state.settings.clock24 === true}  onChange={this.handleClockChange} />
-                                            <label className="form-check-label" htmlFor="radio24H">24 Hours</label>
-                                        </div>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Send Messages with Enter</label>
-                                    </div>
-                                    <div className="form-group row col-4" style={{marginLeft:'5px'}}>
-                                        <div className="col form-check form-check-inline">
-                                            <input className="form-check-input" type="radio" id="radioOn" value="on" checked={this.state.settings.onenter}  onChange={this.handleOnEnterChange} />
-                                            <label className="form-check-label" htmlFor="radioOn">On</label>
-                                        </div>
-                                        <div className="col form-check form-check-inline">
-                                            <input className="form-check-input" type="radio" id="radioOff" value="off" checked={!this.state.settings.onenter}  onChange={this.handleOnEnterChange} />
-                                            <label className="form-check-label" htmlFor="radioOff">Off</label>
-                                        </div>
-                                    </div>
-                                </div>;
-        const messageForm = <form className="form-row" style={{width: '100%'}}>
-                                <div className="form-group mb-2 col-9" style={{paddingLeft: '15px'}}>
-                                    <input type="text" className="form-control" placeholder="Message" value={this.state.message} onChange={ev => this.setState({message: ev.target.value})} onKeyPress={this.handleKeyPress}/>
-                                </div>
-                                <div className="col mb-2">
-                                    <button className="btn btn-primary" onClick={this.sendMessage}>Send</button>
-                                </div>
-                            </form>;
-
         return (
-            <div className="main-chat container">
-                <div className="row header">
-                    <ul className="nav nav-tabs">
-                        <li className="nav-item"><a href="#" onClick={this.openChat} className={"nav-link "+(this.state.currentTab=='chat'?'active':'')} style={{visibility:this.state.titleVisibility}}>Chat</a></li>
-                        <li className="nav-item"><a href="#" onClick={this.openSettings} className={"nav-link "+(this.state.currentTab=='settings'?'active':'')}>Settings</a></li>
-                    </ul>
-                </div>
-                <div className="row content">
-                    {this.state.currentTab=='chat'?messagesContainer:settingsContainer}
-                </div>
-                <div className="row footer">
-                    {this.state.currentTab=='chat'?messageForm:<div></div>}
+            <div id="top-container" className={"container-fluid bg-"+(this.state.settings.color)} style={{height:'100%'}} >
+                <div className="main-chat container">
+                    <div className="row header">
+                        <ul className="nav nav-tabs">
+                            <li className={"nav-item bg-"+(this.state.settings.color)}>
+                                <a 
+                                    href="#" 
+                                    onClick={this.openChat} 
+                                    className={"nav-link "
+                                        +(this.state.currentTab=='chat'?'active':'')
+                                        +(this.state.settings.color=='light'?'text-dark':'text-light')
+                                    } 
+                                    style={{visibility:this.state.titleVisibility}}>
+                                    Chat</a>
+                            </li>
+                            <li className={"nav-item bg-"+(this.state.settings.color)}>
+                                <a 
+                                    href="#" 
+                                    onClick={this.openSettings} 
+                                    className={"nav-link "
+                                        +(this.state.currentTab=='settings'?'active':'')
+                                        +(this.state.settings.color=='light'?'text-dark':'text-light')
+                                    }>
+                                    Settings</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="row content">
+                        {this.state.currentTab=='chat'?
+                            <MessagesContainer 
+                                messages={this.state.messages} 
+                                socketId={this.state.socketId} 
+                                settings={this.state.settings}/>
+                        :
+                            <Settings 
+                                username={this.state.username} 
+                                settings={this.state.settings} 
+                                handleUsernameChange={this.handleUsernameChange} 
+                                handleOnEnterChange={this.handleOnEnterChange} 
+                                handleClockChange={this.handleClockChange} 
+                                handleColorChange={this.handleColorChange}/>
+                        }
+                    </div>
+                    <div className="row footer">
+                        {this.state.currentTab=='chat'?
+                            <MessageForm 
+                                message={this.state.message}  
+                                handleMessageChange={this.handleMessageChange} 
+                                handleMessageKeyPress={this.handleMessageKeyPress} 
+                                handleSendMessage={this.sendMessage}/>
+                        :
+                            <ResetDefault
+                                handleResetDefault={this.resetDefault}/>
+                        }
+                    </div>
                 </div>
             </div>
         );
