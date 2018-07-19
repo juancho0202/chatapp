@@ -17,7 +17,7 @@ class Settings extends Component {
                 <input type="text" className="form-control" id="username" value={this.props.username} onChange={this.props.handleUsernameChange}/>
             </div>
             <div className="form-group">
-                <label class={this.props.settings.color=='light'?'text-dark':'text-light'}>Interface Color</label>
+                <label className={this.props.settings.color=='light'?'text-dark':'text-light'}>Interface Color</label>
             </div>
             <div className="form-group row col-4" style={{marginLeft:'5px'}}>
                 <div className="col form-check form-check-inline">
@@ -30,7 +30,7 @@ class Settings extends Component {
                 </div>
             </div>
             <div className="form-group">
-                <label class={this.props.settings.color=='light'?'text-dark':'text-light'}>Clock Display</label>
+                <label className={this.props.settings.color=='light'?'text-dark':'text-light'}>Clock Display</label>
             </div>
             <div className="form-group row col-4" style={{marginLeft:'5px'}}>
                 <div className="col form-check form-check-inline">
@@ -43,7 +43,7 @@ class Settings extends Component {
                 </div>
             </div>
             <div className="form-group">
-                <label class={this.props.settings.color=='light'?'text-dark':'text-light'}>Send Messages with Enter</label>
+                <label className={this.props.settings.color=='light'?'text-dark':'text-light'}>Send Messages with Enter</label>
             </div>
             <div className="form-group row col-4" style={{marginLeft:'5px'}}>
                 <div className="col form-check form-check-inline">
