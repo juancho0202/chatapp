@@ -1,0 +1,45 @@
+@red : #D90000;
+@white: #FFFFFF;
+@wine : #6A0029;
+@palo-de-rosa : #DD8181;
+@raspberry: #BA7585;
+
+html, body, #root { height: 100%; }
+
+.container {
+	min-height: 100%;
+	overflow: hidden;
+}
+
+.bottom-bar {
+	padding: 10px 0;
+}
+
+.main-chat {
+	display: flex;
+	flex-flow: column;
+	height: 100%;
+	.row.header {
+		flex: 0 1 auto;
+	}
+	  
+	.row.content {
+		flex: 1 1 auto;
+	}
+	  
+	.row.footer {
+		flex: 0 1 4em;
+		padding: 0.8em 0;
+	}
+}
+ 
+.messages {
+	width: 100%;
+	.ownMessage{
+		color:@red;
+		text-align:right;
+	}
+	.otherGuysMessage{
+		color:@wine;
+	}
+}
