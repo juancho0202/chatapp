@@ -19,6 +19,7 @@ class Chat extends React.Component{
             currentTab: 'chat',
             timeoutId: null,
             titleVisibility: 'visible',
+            pendingMessages: 0,
             settings:{
                 color: 'light',
                 clock24: true,
@@ -41,10 +42,16 @@ class Chat extends React.Component{
         this.socket.on('RECEIVE_MESSAGE', (data)=> {
             addMessage(data);
             if(this.state.currentTab!=='chat'){
+                if(!this.state.timeoutId){
+                    this.setState({                    
+                        timeoutId: setInterval(this.blink, 500)
+                    });
+                }   
+                let pending = this.state.pendingMessages;
                 this.setState({
-                    timeoutId: setInterval(this.blink, 500)
-                })
-            }
+                    pendingMessages: pending+1,
+                });
+            }            
         });
         
         /**
@@ -52,7 +59,7 @@ class Chat extends React.Component{
          * @param {object} data The new message to append to the messages array
          */
         const addMessage = data => {
-            this.setState({messages: [...this.state.messages, data]});            
+            this.setState({messages: [...this.state.messages, data]});
         };
 
         /**
@@ -92,7 +99,7 @@ class Chat extends React.Component{
      */
     openChat = ()=>{
         clearInterval(this.state.timeoutId);
-        this.setState({currentTab: 'chat',timeoutId: null, titleVisibility: 'Chat'});
+        this.setState({pendingMessages:0,currentTab: 'chat',timeoutId: null, titleVisibility: 'Chat'});
     }
 
     /**
@@ -212,7 +219,9 @@ class Chat extends React.Component{
                                         +(this.state.settings.color=='light'?'text-dark':'text-light')
                                     } 
                                     style={{visibility:this.state.titleVisibility}}>
-                                    Chat</a>
+                                    Chat                                    
+                                    <sup style={{color:'red'}}>{this.state.pendingMessages==0?'':this.state.pendingMessages}</sup>
+                                </a>
                             </li>
                             <li className={"nav-item bg-"+(this.state.settings.color)}>
                                 <a 
