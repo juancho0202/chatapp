@@ -1,31 +1,25 @@
 import React from "react";
 import io from "socket.io-client";
-import MessageForm from "./MessageForm";
-import Settings from "./Settings";
-import MessagesContainer from "./MessagesContainer";
-import ResetDefault from "./ResetDefault";
+import MessageForm from "./messages/MessageForm";
+import MessagesContainer from "./messages/MessagesContainer";
+import Settings from "./settings/Settings";
+import ResetDefault from "./settings/ResetDefault";
+import { connect } from 'react-redux';
+
+import * as actionTypes from '../store/actions';
 
 class Chat extends React.Component{
     constructor(props){
         super(props);
 
-        this.socket = io('192.168.2.101:5000');
+        this.socket = io('localhost:5000');
 
         this.state = {
             socketId: null,
-            username: 'guest0001',
-            message: '',
-            messages: [],
             currentTab: 'chat',
             timeoutId: null,
             titleVisibility: 'visible',
-            pendingMessages: 0,
-            settings:{
-                color: 'light',
-                clock24: true,
-                ctrlenter: false,
-                onenter: true,
-            }
+            pendingMessages: 0
         };
 
         /**
@@ -55,11 +49,11 @@ class Chat extends React.Component{
         });
         
         /**
-         * Appends new message to the messages array
+         * Appends new message to the messages array in the state
          * @param {object} data The new message to append to the messages array
          */
         const addMessage = data => {
-            this.setState({messages: [...this.state.messages, data]});
+            this.props.onMessageAdded(data);
         };
 
         /**
@@ -69,14 +63,14 @@ class Chat extends React.Component{
         this.sendMessage = ev => {
             ev.preventDefault();
             this.socket.emit('SEND_MESSAGE', {
-                author: this.state.username,
-                message: this.state.message,
+                id: Date.now()+Math.random(),
+                author: this.props.username,
+                message: this.props.message,
                 date24: this.getFormattedTime(true,new Date()),
                 date12: this.getFormattedTime(false,new Date()),
                 socketId: this.state.socketId
             })
-            this.setState({message: ''});
-
+            this.props.onMessageChanged('');
         }
 
         
@@ -110,21 +104,6 @@ class Chat extends React.Component{
     }
 
     /**
-     * Resets all the settings to their default values in the state
-     */
-    resetDefault = ()=>{
-        this.setState({
-            username: 'guest0001',            
-            settings: {
-                color: 'light',
-                clock24: true,
-                ctrlenter: false,
-                onenter: true,
-            }
-        });
-    }
-
-    /**
      * Helper function to get a customized string from the time passed as an attribute
      * @param {boolean} format24 Desired format for the time 24H / 12H
      * @param {Date} date The Date object
@@ -144,123 +123,50 @@ class Chat extends React.Component{
         }
     }
 
-    /**
-     * Handler function to trigger color-selection changes in the state
-     */
-    handleColorChange = (e)=> {
-        let settings  = this.state.settings;
-        settings.color = e.target.value;
-        this.setState({
-            settings
-        });
-    }
-
-    /**
-     * Handler function to trigger time-format changes in the state
-     */
-    handleClockChange = (e)=> {
-        const result=  e.target.value=== '24';
-        
-        let settings  = this.state.settings;
-        settings.clock24 = result;
-        this.setState({
-            settings
-        });
-    }
-
-    /**
-     * Handler function to trigger send-on-enter-preference changes in the state
-     */
-    handleOnEnterChange = (e)=> {
-        const result=  e.target.value=== 'on';
-        
-        let settings  = this.state.settings;
-        settings.onenter = result;
-        this.setState({
-            settings
-        });
-    }
-
-    /**
-     * Handler function to enforce the send-on-enter preference 
-     */
-    handleMessageKeyPress = (e) => {
-        if(e.key == 'Enter' && !this.state.settings.onenter){
-          e.preventDefault();
-        }
-    }
-
-    /**
-     * Handler function to trigger message changes in the state
-     */
-    handleMessageChange = (e) => {
-        this.setState({message: e.target.value})
-    }
-
-    /**
-     * Handler function to trigger username changes in the state
-     */
-    handleUsernameChange = (e) => {
-        this.setState({username: e.target.value})
-    }
-
     render(){
         return (
-            <div id="top-container" className={"container-fluid bg-"+(this.state.settings.color)} style={{height:'100%'}} >
+            <div id="top-container" className={"container-fluid bg-"+(this.props.settings.color)} style={{height:'100%'}} >
                 <div className="main-chat container">
                     <div className="row header">
                         <ul className="nav nav-tabs">
-                            <li className={"nav-item bg-"+(this.state.settings.color)}>
+                            <li className={"nav-item bg-"+(this.props.settings.color)}>
                                 <a 
                                     href="#" 
                                     onClick={this.openChat} 
                                     className={"nav-link "
-                                        +(this.state.currentTab=='chat'?'active':'')
-                                        +(this.state.settings.color=='light'?'text-dark':'text-light')
+                                        +(this.state.currentTab==='chat'?'active':'')
+                                        +(this.props.settings.color==='light'?'text-dark':'text-light')
                                     } 
                                     style={{visibility:this.state.titleVisibility}}>
                                     Chat                                    
-                                    <sup style={{color:'red'}}>{this.state.pendingMessages==0?'':this.state.pendingMessages}</sup>
+                                    <sup style={{color:'red'}}>{this.state.pendingMessages===0?'':this.state.pendingMessages}</sup>
                                 </a>
                             </li>
-                            <li className={"nav-item bg-"+(this.state.settings.color)}>
+                            <li className={"nav-item bg-"+(this.props.settings.color)}>
                                 <a 
                                     href="#" 
                                     onClick={this.openSettings} 
                                     className={"nav-link "
-                                        +(this.state.currentTab=='settings'?'active':'')
-                                        +(this.state.settings.color=='light'?'text-dark':'text-light')
+                                        +(this.state.currentTab==='settings'?'active':'')
+                                        +(this.props.settings.color==='light'?'text-dark':'text-light')
                                     }>
                                     Settings</a>
                             </li>
                         </ul>
                     </div>
                     <div className="row content">
-                        {this.state.currentTab=='chat'?
-                            <MessagesContainer 
-                                messages={this.state.messages} 
-                                socketId={this.state.socketId} 
-                                settings={this.state.settings}/>
+                        {this.state.currentTab==='chat'?
+                            <MessagesContainer
+                                socketId={this.state.socketId}/>
                         :
-                            <Settings 
-                                username={this.state.username} 
-                                settings={this.state.settings} 
-                                handleUsernameChange={this.handleUsernameChange} 
-                                handleOnEnterChange={this.handleOnEnterChange} 
-                                handleClockChange={this.handleClockChange} 
-                                handleColorChange={this.handleColorChange}/>
+                            <Settings/>
                         }
                     </div>
                     <div className="row footer">
-                        {this.state.currentTab=='chat'?
-                            <MessageForm 
-                                message={this.state.message}  
-                                handleMessageChange={this.handleMessageChange} 
-                                handleMessageKeyPress={this.handleMessageKeyPress} 
-                                handleSendMessage={this.sendMessage}/>
+                        {this.state.currentTab==='chat'?
+                            <MessageForm handleSendMessage={this.sendMessage}/>
                         :
-                            <ResetDefault
-                                handleResetDefault={this.resetDefault}/>
+                            <ResetDefault/>
                         }
                     </div>
                 </div>
@@ -269,4 +175,19 @@ class Chat extends React.Component{
     }
 }
 
-export default Chat;
+const mapStateToProps = state => {
+    return {
+        message: state.message,
+        username: state.username,
+        settings: state.settings
+    };
+}
+
+const mapDispatchToProps = dispatch => {
+    return {
+        onMessageAdded: (data) => dispatch({type:actionTypes.ADD_MESSAGE, data }),
+        onMessageChanged: (message) => dispatch({type:actionTypes.SET_CURRENT_MESSAGE, message })
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Chat);

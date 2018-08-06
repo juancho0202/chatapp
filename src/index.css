@@ -17,6 +17,7 @@ body,
 }
 .main-chat .row.header {
   flex: 0 1 auto;
+  margin-bottom: 5px;
 }
 .main-chat .row.content {
   flex: 1 1 auto;
@@ -25,13 +26,33 @@ body,
   flex: 0 1 4em;
   padding: 0.8em 0;
 }
+.chat-message-bubble {
+  display: inline-block;
+  max-width: 350px;
+  padding: 8px 14px;
+  border-radius: 18px;
+  margin-top: 10px;
+  box-shadow: 4px 4px #989898;
+}
+.ownMsg {
+  background-color: #ffffff;
+}
+.otherGuysMsg {
+  background-color: #6a0029;
+}
 .messages {
   width: 100%;
+  max-height: 95vh;
+  padding: 5px;
+  overflow-y: scroll;
 }
 .messages .ownMessage {
   color: #d90000;
   text-align: right;
 }
 .messages .otherGuysMessage {
-  color: #6a0029;
+  color: #dd8181;
+}
+.messages::-webkit-scrollbar {
+  display: none;
 }
